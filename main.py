@@ -91,7 +91,7 @@ def process_idcca_data(data):
     return idcca_data
 
 
-def calculate_atc(cnec_data, idcca_leftovers):
+def calculate_atc(cnec_data):
     """Calculate ATC for each CNEC using RAM and PTDF differences."""
     atc_results = []
 
@@ -109,9 +109,9 @@ def calculate_atc(cnec_data, idcca_leftovers):
         else:
             pre_final_atc = 0
         
-        # Add leftover capacity from IDCCa
-        leftover = idcca_leftovers.get(idx, 0)
-        final_atc = pre_final_atc + leftover
+        # # Add leftover capacity from IDCCa
+        # leftover = idcca_leftovers.get(idx, 0)
+        final_atc = pre_final_atc
 
         atc_results.append({
             "CNEC_ID": idx,
@@ -130,23 +130,13 @@ def main():
         logger.error("Failed to fetch CNEC data . Exiting...")
         return
     
-    logger.info("Fetching IDCCA data...")
-    idcca_raw_data = fetch_data_from_jao(IDCCA_URL)
-
-    if not idcca_raw_data:
-        logger.error("Failed to fetch IDCCA data. Exiting...")
-        return
-    
     logger.info("Processing CNEC data...")
     processed_cnec_data = process_cnec_data(cnec_raw_data)
-    
-    logger.info("Processing IDCCA data...")
-    idcca_data = process_idcca_data(idcca_raw_data)
 
     logger.info(f"CNEC_DATA = {processed_cnec_data}")
 
     logger.info("Calculating ATC values...")
-    atc_results = calculate_atc(processed_cnec_data, idcca_data)
+    atc_results = calculate_atc(processed_cnec_data)
 
     # # Display results
     # for atc in atc_results:
