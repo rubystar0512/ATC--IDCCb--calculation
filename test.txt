@@ -1,0 +1,137 @@
+import requests
+import datetime
+
+
+
+
+
+FromUtc = "2025-01-27T13:00:00.000Z"
+    
+ToUtc =   "2025-01-27T14:00:00.000Z" 
+ 
+
+    
+Today = datetime.datetime.today()
+
+OkteUrlToday = "https://publicationtool.jao.eu/coreID/api/data/IDCCB_finalComputation?Filter=%7B%22Presolved%22%3Atrue%7D&Skip=0&Take=1000&FromUtc=" + FromUtc + "&ToUtc=" + ToUtc
+    
+
+#OkteUrlToday = "https://publicationtool.jao.eu/coreID/api/data/IDCCB_initialComputation?Filter=%7B%22Presolved%22%3Atrue%7D&FromUtc=" + FromUtc + "&ToUtc=" + ToUtc
+
+    
+try:
+    jao = requests.get(OkteUrlToday)
+    print("JAO request code", jao.status_code)
+    jao.raise_for_status()
+except requests.exceptions.HTTPError as err:
+    raise SystemExit(err)
+except requests.exceptions.RequestException as err:
+    print ("OOps: Something Else: ",err)
+    
+
+ptdf_slack = [ 'PTDF_AT','PTDF_BE','PTDF_CZ','PTDF_DE','PTDF_FR','PTDF_HR','PTDF_HU','PTDF_NL','PTDF_PL','PTDF_RO','PTDF_SI','PTDF_SK' ]
+
+borders = ['ATCZ','ATDE','ATHU','ATSI','BEDE','BEFR','BENL','CZAT','CZDE','CZPL','CZSK','DEAT','DEBE','DECZ','DEFR','DENL','DEPL','FRBE','FRDE','HRHU','HRSI','HUAT','HUHR','HURO','HUSI','HUSK','NLBE','NLDE','PLCZ','PLDE','PLSK','ROHU','SIAT','SIHR','SIHU','SKCZ','SKHU','SKPL']
+
+jao = jao.json()
+
+cnec_zz = {}
+
+cnec_mw = {}
+
+cnec_mw_alloc = {}
+
+atc_final = {}
+
+atc_min = {}
+
+end = False
+endd = False
+
+actual_atc_sum = 0
+
+last_atc_sum = 0
+
+cnec_len = len(jao['data'])
+
+print(str(cnec_len) + ' - Number of CNEC')
+
+for x in range(0, cnec_len):
+
+    cnec_zz[x] = {}
+      
+    cnec_zz[x]['ram'] = jao['data'][x]['ram']
+    cnec_zz[x]['num_pos'] = 0
+ 
+    #AT►CZ	AT►DE	AT►HU	AT►SI	
+    cnec_zz[x]['atcz'] = jao['data'][x]['ptdf_AT'] - jao['data'][x]['ptdf_CZ']
+    cnec_zz[x]['atde'] = jao['data'][x]['ptdf_AT'] - jao['data'][x]['ptdf_DE']
+    cnec_zz[x]['athu'] = jao['data'][x]['ptdf_AT'] - jao['data'][x]['ptdf_HU']
+    cnec_zz[x]['atsi'] = jao['data'][x]['ptdf_AT'] - jao['data'][x]['ptdf_SI']
+#    cnec_zz[x]['Alatde'] = jao['data'][x]['ptdf_AT'] - jao['data'][x]['ptdf_ALDE']
+    
+    #BE►DE	BE►FR	BE►NL
+    cnec_zz[x]['bede'] = jao['data'][x]['ptdf_BE'] - jao['data'][x]['ptdf_DE']
+    cnec_zz[x]['befr'] = jao['data'][x]['ptdf_BE'] - jao['data'][x]['ptdf_FR']
+    cnec_zz[x]['benl'] = jao['data'][x]['ptdf_BE'] - jao['data'][x]['ptdf_NL']
+ #   cnec_zz[x]['Albede'] = jao['data'][x]['ptdf_BE'] - jao['data'][x]['ptdf_ALDE']
+    
+    #CZ►AT	CZ►DE	CZ►PL	CZ►SK
+    cnec_zz[x]['czat'] = jao['data'][x]['ptdf_CZ'] - jao['data'][x]['ptdf_AT']
+    cnec_zz[x]['czde'] = jao['data'][x]['ptdf_CZ'] - jao['data'][x]['ptdf_DE']
+    cnec_zz[x]['czpl'] = jao['data'][x]['ptdf_CZ'] - jao['data'][x]['ptdf_PL']
+    cnec_zz[x]['czsk'] = jao['data'][x]['ptdf_CZ'] - jao['data'][x]['ptdf_SK']
+#    cnec_zz[x]['Alczde'] = jao['data'][x]['ptdf_CZ'] - jao['data'][x]['ptdf_ALDE']
+    
+    #DE►AT	DE►BE	DE►CZ	DE►FR	DE►NL	DE►PL
+    cnec_zz[x]['deat'] = jao['data'][x]['ptdf_DE'] - jao['data'][x]['ptdf_AT']
+    cnec_zz[x]['debe'] = jao['data'][x]['ptdf_DE'] - jao['data'][x]['ptdf_BE']
+    cnec_zz[x]['decz'] = jao['data'][x]['ptdf_DE'] - jao['data'][x]['ptdf_CZ']
+    cnec_zz[x]['defr'] = jao['data'][x]['ptdf_DE'] - jao['data'][x]['ptdf_FR']
+    cnec_zz[x]['denl'] = jao['data'][x]['ptdf_DE'] - jao['data'][x]['ptdf_NL']
+    cnec_zz[x]['depl'] = jao['data'][x]['ptdf_DE'] - jao['data'][x]['ptdf_PL']
+#    cnec_zz[x]['Aldebe'] = jao['data'][x]['ptdf_DE'] - jao['data'][x]['ptdf_ALBE']
+    
+    #FR►BE	FR►DE	
+    cnec_zz[x]['frbe'] = jao['data'][x]['ptdf_FR'] - jao['data'][x]['ptdf_BE']
+    cnec_zz[x]['frde'] = jao['data'][x]['ptdf_FR'] - jao['data'][x]['ptdf_DE']
+#    cnec_zz[x]['Alfrbe'] = jao['data'][x]['ptdf_FR'] - jao['data'][x]['ptdf_ALBE']
+#    cnec_zz[x]['Alfrde'] = jao['data'][x]['ptdf_FR'] - jao['data'][x]['ptdf_ALDE']
+    
+    #HR►HU	HR►SI
+    cnec_zz[x]['hrhu'] = jao['data'][x]['ptdf_HR'] - jao['data'][x]['ptdf_HU']
+    cnec_zz[x]['hrsi'] = jao['data'][x]['ptdf_HR'] - jao['data'][x]['ptdf_SI']	
+    
+    #HU►AT	HU►HR	HU►RO	HU►SI	HU►SK
+    cnec_zz[x]['huat'] = jao['data'][x]['ptdf_HU'] - jao['data'][x]['ptdf_AT']
+    cnec_zz[x]['huhr'] = jao['data'][x]['ptdf_HU'] - jao['data'][x]['ptdf_HR']
+    cnec_zz[x]['huro'] = jao['data'][x]['ptdf_HU'] - jao['data'][x]['ptdf_RO']
+    cnec_zz[x]['husi'] = jao['data'][x]['ptdf_HU'] - jao['data'][x]['ptdf_SI']
+    cnec_zz[x]['husk'] = jao['data'][x]['ptdf_HU'] - jao['data'][x]['ptdf_SK']
+    
+    #NL►BE	NL►DE
+    cnec_zz[x]['nlbe'] = jao['data'][x]['ptdf_NL'] - jao['data'][x]['ptdf_BE']
+    cnec_zz[x]['nlde'] = jao['data'][x]['ptdf_NL'] - jao['data'][x]['ptdf_DE']
+#    cnec_zz[x]['Alnlbe'] = jao['data'][x]['ptdf_NL'] - jao['data'][x]['ptdf_ALBE']
+#    cnec_zz[x]['Alnlde'] = jao['data'][x]['ptdf_NL'] - jao['data'][x]['ptdf_ALDE']
+    
+    
+    #PL►CZ	PL►DE	PL►SK
+    cnec_zz[x]['plcz'] = jao['data'][x]['ptdf_PL'] - jao['data'][x]['ptdf_CZ']
+    cnec_zz[x]['plde'] = jao['data'][x]['ptdf_PL'] - jao['data'][x]['ptdf_DE']
+    cnec_zz[x]['plsk'] = jao['data'][x]['ptdf_PL'] - jao['data'][x]['ptdf_SK']
+#    cnec_zz[x]['Alplde'] = jao['data'][x]['ptdf_PL'] - jao['data'][x]['ptdf_ALDE']
+    
+    #RO►HU
+    cnec_zz[x]['rohu'] = jao['data'][x]['ptdf_RO'] - jao['data'][x]['ptdf_HU']
+    
+    #SI►AT	SI►HR	SI►HU
+    cnec_zz[x]['siat'] = jao['data'][x]['ptdf_SI'] - jao['data'][x]['ptdf_AT']
+    cnec_zz[x]['sihr'] = jao['data'][x]['ptdf_SI'] - jao['data'][x]['ptdf_HR']
+    cnec_zz[x]['sihu'] = jao['data'][x]['ptdf_SI'] - jao['data'][x]['ptdf_HU']
+    
+    #SK►CZ	SK►HU   SK►PL
+    cnec_zz[x]['skcz'] = jao['data'][x]['ptdf_SK'] - jao['data'][x]['ptdf_CZ']
+    cnec_zz[x]['skhu'] = jao['data'][x]['ptdf_SK'] - jao['data'][x]['ptdf_HU']
+    cnec_zz[x]['skpl'] = jao['data'][x]['ptdf_SK'] - jao['data'][x]['ptdf_PL']
+   
