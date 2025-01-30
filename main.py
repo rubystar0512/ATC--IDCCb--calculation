@@ -84,15 +84,13 @@ def calculate_atc(cnec_data):
     atc_results = []
 
     for cnec_id, cnec_info in cnec_data.items():
-        # Ensure RAM is a numeric type (float or int)
-        ram = float(cnec_info["ram"])  # Convert RAM to float
+        ram = float(cnec_info["ram"]) 
         ptdf_differences = cnec_info["ptdf_differences"]
 
         # Initialize ATCs
         atc_values = {border: 0.0 for border in ptdf_differences.keys()}  # Use float for ATCs
         negative_atcs = {}
 
-        # Handle negative RAMs
         if ram < 0:
             for border, ptdf_diff in ptdf_differences.items():
                 # Ensure PTDF differences are numeric
@@ -137,7 +135,7 @@ def calculate_atc(cnec_data):
             # Check for convergence
             current_atc_sum = sum(atc_values.values())
             logger.info(f"Iteration {iteration}: current_atc_sum={current_atc_sum}, previous_atc_sum={previous_atc_sum}")
-            if abs(current_atc_sum - previous_atc_sum) < 1:  # 1 kW threshold
+            if abs(current_atc_sum - previous_atc_sum) < 1000:  # 1 kW threshold
                 break
 
         # Round down to integer values
