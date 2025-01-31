@@ -121,7 +121,8 @@ def calculate_atc(cnec_data):
 
         # Iterative calculation of positive ATCs
         iteration = 0
-        while True:
+        temp_flag = True
+        while temp_flag:
             iteration += 1
             previous_atc_sum = sum(atc_values.values())
 
@@ -135,8 +136,9 @@ def calculate_atc(cnec_data):
             # Check for convergence
             current_atc_sum = sum(atc_values.values())
             logger.info(f"Iteration {iteration}: current_atc_sum={current_atc_sum}, previous_atc_sum={previous_atc_sum}")
-            if abs(current_atc_sum - previous_atc_sum) < 1000:  # 1 kW threshold
-                break
+            if abs(current_atc_sum - previous_atc_sum) > 1000:  # 1 kW threshold
+                temp_flag = False
+                
 
         # Round down to integer values
         for border in atc_values:
