@@ -39,6 +39,8 @@ BORDER_MAPPING = {
     "SK": ["CZ", "HU", "PL"]
 }
 
+
+
 PTDF_KEYS = {country: f"ptdf_{country}" for country in BORDER_MAPPING.keys()}
 
 logging.basicConfig(level=logging.INFO)
