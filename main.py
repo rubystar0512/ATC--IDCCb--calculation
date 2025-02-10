@@ -160,6 +160,8 @@ def calculate_atc(cnec_data):
     return atc_results
   
 
+  
+
 def main():
     """Main function to fetch and process CNEC data."""
     logger.info("Fetching Final Computation data...")
