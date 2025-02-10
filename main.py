@@ -104,6 +104,7 @@ def calculate_atc(cnec_data):
             for border in negative_atcs:
                 atc_values[border] = min(negative_atcs.get(border, 0.0), 0.0)
 
+
             # Calculate scaling factor
             scaling_factors = []
             for border, atc in atc_values.items():
@@ -160,7 +161,7 @@ def calculate_atc(cnec_data):
     return atc_results
   
 
-  
+
 
 def main():
     """Main function to fetch and process CNEC data."""
