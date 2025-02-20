@@ -128,6 +128,8 @@ def calculate_atc(cnec_data):
     
     # Initialize ATC_0 with the correct size (it should match the length of PTDF_0)
     ATC_0 = [0] 
+
+    # Initialize difference to a large value to enter the loop
     difference = 1
     while difference > 0.001:
         # Separate positive and negative RAM and PTDF
