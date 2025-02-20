@@ -1,16 +1,16 @@
 import requests
 from urllib.parse import urlencode
 import logging
+import json
 
 # Define constants and configurations
-FROM_UTC = "2025-01-27T13:00:00.000Z"
-TO_UTC = "2025-01-27T14:00:00.000Z"
+FROM_UTC = "2025-02-20T00:00:00.000Z"
+TO_UTC = "2025-02-20T02:00:00.000Z"
 FINAL_URL = "https://publicationtool.jao.eu/coreID/api/data/IDCCB_finalComputation"
 
 PARAMS_FINAL = {
     "Filter": '{"Presolved":true}',
     "Skip": 0,
-    "Take": 1000,
     "FromUtc": FROM_UTC,
     "ToUtc": TO_UTC
 }
@@ -38,8 +38,6 @@ BORDER_MAPPING = {
     "SI": ["AT", "HR", "HU"],
     "SK": ["CZ", "HU", "PL"]
 }
-
-
 
 PTDF_KEYS = {country: f"ptdf_{country}" for country in BORDER_MAPPING.keys()}
 
@@ -82,86 +80,126 @@ def process_cnec_data(data):
     return cnec_data
 
 def calculate_atc(cnec_data):
-    """Calculate ATC for each CNEC using RAM and PTDF differences."""
-    atc_results = []
+    RAM_0 = [item['ram'] for item in cnec_data.values()]
 
-    for cnec_id, cnec_info in cnec_data.items():
-        ram = float(cnec_info["ram"]) 
-        ptdf_differences = cnec_info["ptdf_differences"]
+    PTDF_0 = [
+        [
+            item['ptdf_differences'].get('atcz', 0),
+            item['ptdf_differences'].get('atde', 0),
+            item['ptdf_differences'].get('athu', 0),
+            item['ptdf_differences'].get('atsi', 0),
+            item['ptdf_differences'].get('bede', 0),
+            item['ptdf_differences'].get('befr', 0),
+            item['ptdf_differences'].get('benl', 0),
+            item['ptdf_differences'].get('czat', 0),
+            item['ptdf_differences'].get('czde', 0),
+            item['ptdf_differences'].get('czpl', 0),
+            item['ptdf_differences'].get('czsk', 0),
+            item['ptdf_differences'].get('deat', 0),
+            item['ptdf_differences'].get('debe', 0),
+            item['ptdf_differences'].get('decz', 0),
+            item['ptdf_differences'].get('defr', 0),
+            item['ptdf_differences'].get('denl', 0),
+            item['ptdf_differences'].get('depl', 0),
+            item['ptdf_differences'].get('frbe', 0),
+            item['ptdf_differences'].get('frde', 0),
+            item['ptdf_differences'].get('hrhu', 0),
+            item['ptdf_differences'].get('hrsi', 0),
+            item['ptdf_differences'].get('huat', 0),
+            item['ptdf_differences'].get('huhr', 0),
+            item['ptdf_differences'].get('huro', 0),
+            item['ptdf_differences'].get('husi', 0),
+            item['ptdf_differences'].get('husk', 0),
+            item['ptdf_differences'].get('nlbe', 0),
+            item['ptdf_differences'].get('nlde', 0),
+            item['ptdf_differences'].get('plcz', 0),
+            item['ptdf_differences'].get('plde', 0),
+            item['ptdf_differences'].get('plsk', 0),
+            item['ptdf_differences'].get('rohu', 0),
+            item['ptdf_differences'].get('siat', 0),
+            item['ptdf_differences'].get('sihr', 0),
+            item['ptdf_differences'].get('sihu', 0),
+            item['ptdf_differences'].get('skcz', 0),
+            item['ptdf_differences'].get('skhu', 0),
+            item['ptdf_differences'].get('skpl', 0)
+        ]
+        for item in cnec_data.values()
+    ]
+    
+    # Initialize ATC_0 with the correct size (it should match the length of PTDF_0)
+    ATC_0 = [0] * len(PTDF_0)
+    difference = 1
+    while difference > 0.001:
+        # Separate positive and negative RAM and PTDF
+        positive_PTDF_final = []
+        positive_RAM = []
+        negative_RAM = []
+        negative_PTDF = []
 
-        # Initialize ATCs
-        atc_values = {border: 0.0 for border in ptdf_differences.keys()}  # Use float for ATCs
-        negative_atcs = {}
+        for i in range(len(PTDF_0)):
+            positive_PTDF = [ptdf for ptdf in PTDF_0[i] if ptdf > 0]
+            positive_PTDF_final.append(positive_PTDF)
+            if RAM_0[i] > 0:
+                positive_RAM.append(RAM_0[i])
+            else:
+                negative_RAM.append(RAM_0[i])
+                negative_PTDF.append(PTDF_0[i])
 
-        if ram < 0:
-            for border, ptdf_diff in ptdf_differences.items():
-                # Ensure PTDF differences are numeric
-                ptdf_diff = float(ptdf_diff)  # Convert PTDF difference to float
-                if ptdf_diff > 0:
-                    negative_atcs[border] = (ptdf_diff * ram) / ptdf_diff
+        # Process Negative RAM and PTDF
+        if negative_RAM:
+            deno_list = []
+            for neg_ptdf in negative_PTDF:
+                deno = sum([ptdf ** 2 for ptdf in neg_ptdf])
+                deno_list.append(deno)
 
-            # Determine the most negative ATC for each border
-            for border in negative_atcs:
-                atc_values[border] = min(negative_atcs.get(border, 0.0), 0.0)
+            neg_ATC = []
+            for i in range(len(negative_PTDF)):
+                # Check for division by zero
+                if deno_list[i] != 0:
+                    neg_ATC.append([(negative_RAM[i] * (negative_PTDF[i][j] / deno_list[i])) for j in range(len(negative_PTDF[i]))])
+                else:
+                    neg_ATC.append([0 for _ in range(len(negative_PTDF[i]))])  # Assign zero if deno is zero
 
+            # Scale negative ATC
+            sf_list = []
+            for i in range(len(neg_ATC)):
+                sf_deno = sum([negative_PTDF[i][j] * neg_ATC[i][j] for j in range(len(negative_PTDF[i]))])
+                if sf_deno != 0:
+                    sf_list.append(negative_RAM[i] / sf_deno)
+                else:
+                    sf_list.append(0)  # Prevent division by zero
 
-            # Calculate scaling factor
-            scaling_factors = []
-            for border, atc in atc_values.items():
-                if atc < 0:
-                    ptdf_diff = float(ptdf_differences[border])  # Ensure PTDF difference is numeric
-                    scaling_factor = ram / (ptdf_diff * atc)
-                    scaling_factors.append(scaling_factor)
+            final_sf = max(sf_list)
+            negative_ATC = [min(neg_ATC[i]) * final_sf for i in range(len(neg_ATC))]
 
-            if scaling_factors:
-                final_scaling_factor = max(scaling_factors)
-                for border in atc_values:
-                    if atc_values[border] < 0:
-                        atc_values[border] *= final_scaling_factor
+            ATC_0 = negative_ATC
 
-        # Adjust RAM to be non-negative
-        ram = max(0.0, ram)
+        # Process Positive RAM and PTDF
+        max_RAM = [max(0, ram) for ram in RAM_0]
+        ATC_ini_mul = []
+        for i in range(len(RAM_0)):
+            calc = sum(PTDF_0[i][j] * ATC_0[i] for j in range(len(PTDF_0[i])))
+            ATC_ini_mul.append(calc)
 
-        # Iterative calculation of positive ATCs
-        iteration = 0
-        temp_flag = True
-        while temp_flag:
-            iteration += 1
-            previous_atc_sum = sum(atc_values.values())
+        RAM_ini = [max(0, max_RAM[i] - ATC_ini_mul[i]) for i in range(len(RAM_0))]
+        ATC_1d = []
+        for i in range(len(positive_PTDF_final)):
+            ATC_1d.append([RAM_ini[i] / positive_PTDF_final[i][j] if positive_PTDF_final[i][j] != 0 else 0 for j in range(len(positive_PTDF_final[i]))])
 
-            # Calculate remaining available margin for each CNEC
-            for border, ptdf_diff in ptdf_differences.items():
-                ptdf_diff = float(ptdf_diff)  # Ensure PTDF difference is numeric
-                if ptdf_diff > 0:
-                    ram_share = ram / len(ptdf_differences)
-                    max_additional_exchange = ram_share / ptdf_diff
-                    atc_values[border] += max_additional_exchange
-            # Check for convergence
-            current_atc_sum = sum(atc_values.values())
-            logger.info(f"Iteration {iteration}: current_atc_sum={current_atc_sum}, previous_atc_sum={previous_atc_sum}")
-            if abs(current_atc_sum - previous_atc_sum) > 1000:  # 1 kW threshold
-                temp_flag = False
-                
+        ATC_min = [min(ATC_1d[i]) for i in range(len(ATC_1d))]
+        added_ATC = [ATC_0[i] + ATC_min[i] for i in range(len(ATC_min))]
+        max_ATC = 1000
+        limited_ATC = [min(max_ATC, added_ATC[i]) for i in range(len(added_ATC))]
 
-        # Round down to integer values
-        for border in atc_values:
-            atc_values[border] = int(atc_values[border])
+        # Calculate the difference to check for convergence
+        sum_of_new_ATC = sum(limited_ATC)
+        sum_of_old_ATC = sum(ATC_0)
+        difference = abs(sum_of_new_ATC - sum_of_old_ATC)
 
-        # Determine final ATCs as the minimum of positive and negative ATCs
-        final_atcs = {}
-        for border in atc_values:
-            final_atcs[border] = min(atc_values[border], negative_atcs.get(border, atc_values[border]))
+        ATC_0 = limited_ATC
+        RAM_0 = RAM_ini
 
-        atc_results.append({
-            "CNEC_ID": cnec_id,
-            "PreFinal_ATC": atc_values,
-            "Final_ATC": final_atcs
-        })
-
-    return atc_results
-  
-
-
+    return ATC_0
 
 def main():
     """Main function to fetch and process CNEC data."""
