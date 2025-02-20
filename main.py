@@ -141,9 +141,7 @@ def calculate_atc(cnec_data):
             positive_PTDF_final.append(positive_PTDF)
             if RAM_0[i] > 0:
                 positive_RAM.append(RAM_0[i])
-            else:
-                negative_RAM.append(RAM_0[i])
-                negative_PTDF.append(PTDF_0[i])
+           
 
         # Process Negative RAM and PTDF
         if negative_RAM:
