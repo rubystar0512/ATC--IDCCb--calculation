@@ -5,7 +5,7 @@ import json
 
 # Define constants and configurations
 FROM_UTC = "2025-02-20T00:00:00.000Z"
-TO_UTC = "2025-02-20T02:00:00.000Z"
+TO_UTC = "2025-02-20T01:00:00.000Z"
 FINAL_URL = "https://publicationtool.jao.eu/coreID/api/data/IDCCB_finalComputation"
 
 PARAMS_FINAL = {
@@ -84,118 +84,201 @@ def calculate_atc(cnec_data):
 
     PTDF_0 = [
         [
-            item['ptdf_differences'].get('atcz', 0),
-            item['ptdf_differences'].get('atde', 0),
-            item['ptdf_differences'].get('athu', 0),
-            item['ptdf_differences'].get('atsi', 0),
-            item['ptdf_differences'].get('bede', 0),
-            item['ptdf_differences'].get('befr', 0),
-            item['ptdf_differences'].get('benl', 0),
-            item['ptdf_differences'].get('czat', 0),
-            item['ptdf_differences'].get('czde', 0),
-            item['ptdf_differences'].get('czpl', 0),
-            item['ptdf_differences'].get('czsk', 0),
-            item['ptdf_differences'].get('deat', 0),
-            item['ptdf_differences'].get('debe', 0),
-            item['ptdf_differences'].get('decz', 0),
-            item['ptdf_differences'].get('defr', 0),
-            item['ptdf_differences'].get('denl', 0),
-            item['ptdf_differences'].get('depl', 0),
-            item['ptdf_differences'].get('frbe', 0),
-            item['ptdf_differences'].get('frde', 0),
-            item['ptdf_differences'].get('hrhu', 0),
-            item['ptdf_differences'].get('hrsi', 0),
-            item['ptdf_differences'].get('huat', 0),
-            item['ptdf_differences'].get('huhr', 0),
-            item['ptdf_differences'].get('huro', 0),
-            item['ptdf_differences'].get('husi', 0),
-            item['ptdf_differences'].get('husk', 0),
-            item['ptdf_differences'].get('nlbe', 0),
-            item['ptdf_differences'].get('nlde', 0),
-            item['ptdf_differences'].get('plcz', 0),
-            item['ptdf_differences'].get('plde', 0),
-            item['ptdf_differences'].get('plsk', 0),
-            item['ptdf_differences'].get('rohu', 0),
-            item['ptdf_differences'].get('siat', 0),
-            item['ptdf_differences'].get('sihr', 0),
-            item['ptdf_differences'].get('sihu', 0),
-            item['ptdf_differences'].get('skcz', 0),
-            item['ptdf_differences'].get('skhu', 0),
-            item['ptdf_differences'].get('skpl', 0)
+            item['ptdf_differences'].get('atcz', None),
+            item['ptdf_differences'].get('atde', None),
+            item['ptdf_differences'].get('athu', None),
+            item['ptdf_differences'].get('atsi', None),
+            item['ptdf_differences'].get('bede', None),
+            item['ptdf_differences'].get('befr', None),
+            item['ptdf_differences'].get('benl', None),
+            item['ptdf_differences'].get('czat', None),
+            item['ptdf_differences'].get('czde', None),
+            item['ptdf_differences'].get('czpl', None),
+            item['ptdf_differences'].get('czsk', None),
+            item['ptdf_differences'].get('deat', None),
+            item['ptdf_differences'].get('debe', None),
+            item['ptdf_differences'].get('decz', None),
+            item['ptdf_differences'].get('defr', None),
+            item['ptdf_differences'].get('denl', None),
+            item['ptdf_differences'].get('depl', None),
+            item['ptdf_differences'].get('frbe', None),
+            item['ptdf_differences'].get('frde', None),
+            item['ptdf_differences'].get('hrhu', None),
+            item['ptdf_differences'].get('hrsi', None),
+            item['ptdf_differences'].get('huat', None),
+            item['ptdf_differences'].get('huhr', None),
+            item['ptdf_differences'].get('huro', None),
+            item['ptdf_differences'].get('husi', None),
+            item['ptdf_differences'].get('husk', None),
+            item['ptdf_differences'].get('nlbe', None),
+            item['ptdf_differences'].get('nlde', None),
+            item['ptdf_differences'].get('plcz', None),
+            item['ptdf_differences'].get('plde', None),
+            item['ptdf_differences'].get('plsk', None),
+            item['ptdf_differences'].get('rohu', None),
+            item['ptdf_differences'].get('siat', None),
+            item['ptdf_differences'].get('sihr', None),
+            item['ptdf_differences'].get('sihu', None),
+            item['ptdf_differences'].get('skcz', None),
+            item['ptdf_differences'].get('skhu', None),
+            item['ptdf_differences'].get('skpl', None)
         ]
         for item in cnec_data.values()
     ]
     
-    # Initialize ATC_0 with the correct size (it should match the length of PTDF_0)
     ATC_0 = [0] * len(PTDF_0)
+
     difference = 1
-    while difference > 0.001:
-        # Separate positive and negative RAM and PTDF
-        positive_PTDF_final = []
-        positive_RAM = []
-        negative_RAM = []
-        negative_PTDF = []
+    positive_PTDF = []
+    positive_PTDF_final = []
+    positive_RAM = []
+    negative_RAM = []
+    for i in range(0, len(PTDF_0)):
+        for j in range(0,  len(PTDF_0[i])):
+            if PTDF_0[i][j] > 0:
+                positive_PTDF.append(PTDF_0[i][j])
+        positive_PTDF_final.append(positive_PTDF)
+        positive_PTDF = []
 
-        for i in range(len(PTDF_0)):
-            positive_PTDF = [ptdf for ptdf in PTDF_0[i] if ptdf > 0]
-            positive_PTDF_final.append(positive_PTDF)
-            if RAM_0[i] > 0:
-                positive_RAM.append(RAM_0[i])
-            else:
-                negative_RAM.append(RAM_0[i])
-                negative_PTDF.append(PTDF_0[i])
+    pos_PTDF = []
+    neg_PTDF = []
+    pos_ATC = []
+    neg_ATC = []
+    for i in range(0, len(RAM_0)):
+        if RAM_0[i] > 0:
+            positive_RAM.append(RAM_0[i])
+            pos_PTDF.append(positive_PTDF_final[i])
+            pos_ATC.append(ATC_0[i])
+        else:
+            negative_RAM.append(RAM_0[i])
+            neg_PTDF.append(positive_PTDF_final[i])
+            neg_ATC.append(ATC_0[i])
 
-        # Process Negative RAM and PTDF
-        if negative_RAM:
-            deno_list = []
-            for neg_ptdf in negative_PTDF:
-                deno = sum([ptdf ** 2 for ptdf in neg_ptdf])
-                deno_list.append(deno)
+    contains_negative_RAM = False
+    for i in range(0, len(RAM_0)):
+        if RAM_0[i] <  0:
+            contains_negative_RAM = True
+    if contains_negative_RAM == True:
+        deno = 0
+        deno_list = []
+        for i in range(0, len(neg_PTDF)):
+            for j in range(0, len(neg_PTDF[i])):
+                deno = deno + neg_PTDF[i][j] ** 2
+            deno_list.append(deno)
+            deno = 0
 
+
+        neg_ATC = []
+        neg_ATC_final = []
+        neg_ATC_final_min = []
+        for i in range(0, len(neg_PTDF)):
+            for j in range(0, len(neg_PTDF[i])):
+                neg_ATC.append((neg_PTDF[i][j] / deno_list[i]) * negative_RAM[i])
+            neg_ATC_final.append(neg_ATC)
+            neg_ATC_final_min.append(min(neg_ATC))
             neg_ATC = []
-            for i in range(len(negative_PTDF)):
-                # Check for division by zero
-                if deno_list[i] != 0:
-                    neg_ATC.append([(negative_RAM[i] * (negative_PTDF[i][j] / deno_list[i])) for j in range(len(negative_PTDF[i]))])
-                else:
-                    neg_ATC.append([0 for _ in range(len(negative_PTDF[i]))])  # Assign zero if deno is zero
 
-            # Scale negative ATC
-            sf_list = []
-            for i in range(len(neg_ATC)):
-                sf_deno = sum([negative_PTDF[i][j] * neg_ATC[i][j] for j in range(len(negative_PTDF[i]))])
-                if sf_deno != 0:
-                    sf_list.append(negative_RAM[i] / sf_deno)
-                else:
-                    sf_list.append(0)  # Prevent division by zero
+        sf_deno = 0
+        sf_list = []
+        for i in range(0, len(neg_ATC_final)):
+            for j in range(0 , len(neg_ATC_final[i])):
+                sf_deno = sf_deno +  neg_PTDF[i][j] * neg_ATC_final[i][j]
 
-            final_sf = max(sf_list)
-            negative_ATC = [min(neg_ATC[i]) * final_sf for i in range(len(neg_ATC))]
+            sf = negative_RAM[i] / sf_deno
+            sf_list.append(sf)
+            sf_deno = 0
 
-            ATC_0 = negative_ATC
+        final_sf = max(sf_list)
 
-        # Process Positive RAM and PTDF
-        max_RAM = [max(0, ram) for ram in RAM_0]
+        negative_ATC = []
+        for i in range(0 , len(neg_ATC_final_min)):
+            negative_ATC.append(neg_ATC_final_min[i] * final_sf)
+
+        final_negative_ATC = round(min(negative_ATC))
+
+    non_negative_ptdf_1d = []
+    non_negative_ptdf_2d = []
+
+    for i in range(0, len(PTDF_0)):
+        for j in range(0, len(PTDF_0[i])):
+            if PTDF_0[i][j] < 0:
+                non_negative_ptdf_1d.append(0)
+            else:
+                non_negative_ptdf_1d.append(PTDF_0[i][j])
+        non_negative_ptdf_2d.append(non_negative_ptdf_1d)
+        non_negative_ptdf_1d = []
+
+
+    while difference > 0.001:
+        max_RAM = []
+        for i in range(0, len(RAM_0)):
+            if RAM_0[i] > 0:
+                max_RAM.append(RAM_0[i])
+            else:
+                max_RAM.append(0)
+
+        calc = 0
         ATC_ini_mul = []
-        for i in range(len(RAM_0)):
-            calc = sum(PTDF_0[i][j] * ATC_0[i] for j in range(len(PTDF_0[i])))
+        RAM_ini = []
+
+        for i in range(0 , len(non_negative_ptdf_2d)):
+            for j in range(0, len(non_negative_ptdf_2d[i])):
+                calc = calc + non_negative_ptdf_2d[i][j] * ATC_0[i]
             ATC_ini_mul.append(calc)
+            calc = 0
 
-        RAM_ini = [max(0, max_RAM[i] - ATC_ini_mul[i]) for i in range(len(RAM_0))]
+        for i in range(0, len(max_RAM)):
+            if max_RAM[i] - ATC_ini_mul[i] < 0 :
+                RAM_ini.append(0)
+
+            else:
+                RAM_ini.append(max_RAM[i] - ATC_ini_mul[i])
+        zero = []
+
+        for i in range(0,len(ATC_0)):
+            zero.append(0)
+        if RAM_ini == zero:
+            break
+
         ATC_1d = []
-        for i in range(len(positive_PTDF_final)):
-            ATC_1d.append([RAM_ini[i] / positive_PTDF_final[i][j] if positive_PTDF_final[i][j] != 0 else 0 for j in range(len(positive_PTDF_final[i]))])
+        ATC_2d = []
+        ATC_min = []
+        for i in range(0, len(positive_PTDF_final)):
+            for j in range(0, len(positive_PTDF_final[i])):
+                if RAM_ini[i] == 0 and positive_PTDF_final[i][j] == 0:
+                    ATC_1d.append(0)
+                else:
+                    ATC_1d.append(RAM_ini[i]/positive_PTDF_final[i][j])
+            ATC_2d.append(ATC_1d)
+            ATC_1d = []
 
-        ATC_min = [min(ATC_1d[i]) for i in range(len(ATC_1d))]
-        added_ATC = [ATC_0[i] + ATC_min[i] for i in range(len(ATC_min))]
-        max_ATC = 1000
-        limited_ATC = [min(max_ATC, added_ATC[i]) for i in range(len(added_ATC))]
+        for i in range(0, len(ATC_2d)):
+            ATC_min.append(min(ATC_2d[i]))
 
-        # Calculate the difference to check for convergence
-        sum_of_new_ATC = sum(limited_ATC)
-        sum_of_old_ATC = sum(ATC_0)
-        difference = abs(sum_of_new_ATC - sum_of_old_ATC)
+        added_ATC = []
 
+        for i in range(0, len(ATC_min)):
+            added_ATC.append(ATC_0[i] + ATC_min[i])
+
+        limited_ATC = []
+        if max_ATC != 0:
+            for i in range(0, len(added_ATC)):
+                if added_ATC[i] > max_ATC:
+                    limited_ATC.append(max_ATC)
+                else:
+                    limited_ATC.append(added_ATC[i])
+        else:
+            limited_ATC = added_ATC
+
+        sum_of_new_ATC = 0
+        sum_of_old_ATC = 0
+        for i in range(0, len(limited_ATC)):
+            sum_of_new_ATC = sum_of_new_ATC + limited_ATC[i]
+
+        for i in range(0, len(ATC_0)):
+            sum_of_new_ATC = sum_of_new_ATC + ATC_0[i]
+
+        difference = sum_of_new_ATC - sum_of_old_ATC
         ATC_0 = limited_ATC
         RAM_0 = RAM_ini
 
