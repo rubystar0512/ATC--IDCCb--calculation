@@ -126,56 +126,32 @@ def calculate_atc(cnec_data):
         for item in cnec_data.values()
     ]
     
+    # Initialize ATC_0 with the correct size (it should match the length of PTDF_0)
     ATC_0 = [0] * len(PTDF_0)
-
     difference = 1
-    positive_PTDF = []
-    positive_PTDF_final = []
-    positive_RAM = []
-    negative_RAM = []
-    for i in range(0, len(PTDF_0)):
-        for j in range(0,  len(PTDF_0[i])):
-            if PTDF_0[i][j] > 0:
-                positive_PTDF.append(PTDF_0[i][j])
-        positive_PTDF_final.append(positive_PTDF)
-        positive_PTDF = []
+    while difference > 0.001:
+        # Separate positive and negative RAM and PTDF
+        positive_PTDF_final = []
+        positive_RAM = []
+        negative_RAM = []
+        negative_PTDF = []
 
-    pos_PTDF = []
-    neg_PTDF = []
-    pos_ATC = []
-    neg_ATC = []
-    for i in range(0, len(RAM_0)):
-        if RAM_0[i] > 0:
-            positive_RAM.append(RAM_0[i])
-            pos_PTDF.append(positive_PTDF_final[i])
-            pos_ATC.append(ATC_0[i])
-        else:
-            negative_RAM.append(RAM_0[i])
-            neg_PTDF.append(positive_PTDF_final[i])
-            neg_ATC.append(ATC_0[i])
+        for i in range(len(PTDF_0)):
+            positive_PTDF = [ptdf for ptdf in PTDF_0[i] if ptdf > 0]
+            positive_PTDF_final.append(positive_PTDF)
+            if RAM_0[i] > 0:
+                positive_RAM.append(RAM_0[i])
+            else:
+                negative_RAM.append(RAM_0[i])
+                negative_PTDF.append(PTDF_0[i])
 
-    contains_negative_RAM = False
-    for i in range(0, len(RAM_0)):
-        if RAM_0[i] <  0:
-            contains_negative_RAM = True
-    if contains_negative_RAM == True:
-        deno = 0
-        deno_list = []
-        for i in range(0, len(neg_PTDF)):
-            for j in range(0, len(neg_PTDF[i])):
-                deno = deno + neg_PTDF[i][j] ** 2
-            deno_list.append(deno)
-            deno = 0
+        # Process Negative RAM and PTDF
+        if negative_RAM:
+            deno_list = []
+            for neg_ptdf in negative_PTDF:
+                deno = sum([ptdf ** 2 for ptdf in neg_ptdf])
+                deno_list.append(deno)
 
-
-        neg_ATC = []
-        neg_ATC_final = []
-        neg_ATC_final_min = []
-        for i in range(0, len(neg_PTDF)):
-            for j in range(0, len(neg_PTDF[i])):
-                neg_ATC.append((neg_PTDF[i][j] / deno_list[i]) * negative_RAM[i])
-            neg_ATC_final.append(neg_ATC)
-            neg_ATC_final_min.append(min(neg_ATC))
             neg_ATC = []
 
         sf_deno = 0
@@ -188,36 +164,13 @@ def calculate_atc(cnec_data):
             sf_list.append(sf)
             sf_deno = 0
 
-        final_sf = max(sf_list)
+            final_sf = max(sf_list)
+            negative_ATC = [min(neg_ATC[i]) * final_sf for i in range(len(neg_ATC))]
 
-        negative_ATC = []
-        for i in range(0 , len(neg_ATC_final_min)):
-            negative_ATC.append(neg_ATC_final_min[i] * final_sf)
+            ATC_0 = negative_ATC
 
-        final_negative_ATC = round(min(negative_ATC))
-
-    non_negative_ptdf_1d = []
-    non_negative_ptdf_2d = []
-
-    for i in range(0, len(PTDF_0)):
-        for j in range(0, len(PTDF_0[i])):
-            if PTDF_0[i][j] < 0:
-                non_negative_ptdf_1d.append(0)
-            else:
-                non_negative_ptdf_1d.append(PTDF_0[i][j])
-        non_negative_ptdf_2d.append(non_negative_ptdf_1d)
-        non_negative_ptdf_1d = []
-
-
-    while difference > 0.001:
-        max_RAM = []
-        for i in range(0, len(RAM_0)):
-            if RAM_0[i] > 0:
-                max_RAM.append(RAM_0[i])
-            else:
-                max_RAM.append(0)
-
-        calc = 0
+        # Process Positive RAM and PTDF
+        max_RAM = [max(0, ram) for ram in RAM_0]
         ATC_ini_mul = []
         RAM_ini = []
 
